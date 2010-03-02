@@ -8,7 +8,7 @@ attribute - they are not constrained by the same origin policy as AJAX requests.
 However as those load document building is blocked and the page feels slow.
 This script enables loading of such remote scripts after the document is built.
 There's special support for scripts that write directly to the DOM using
-**document.write()** (e.g. gist / pastie embedding. You might even modify the
+*document.write()* (e.g. gist / pastie embedding. You might even modify the
 "written" HTML content before it gets inserted into the DOM.
 
 Examples
