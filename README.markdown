@@ -8,7 +8,7 @@ attribute - they are not constrained by the same origin policy as AJAX requests.
 However as those load document building is blocked and the page feels slow.
 This script enables loading of such remote scripts after the document is built.
 There's special support for scripts that write directly to the DOM using
-`document.write()` (e.g. gist / pastie embedding. You might even modify the
+`document.write()` (e.g. gist / pastie embedding). You might even modify the
 "written" HTML content before it gets inserted into the DOM.
 
 Examples
@@ -63,9 +63,9 @@ Examples
     // @see the demo.html for a scriptLoaded callback that removes style links
     // from pasties (http://pastie.org) and gists (http://gist.github.com)
 
-If *remoteScript* is called after the DOM has loaded - the script loading gets
-executed immediately, if *appendScript* is not present scripts are appended
-to the end of the <body> tag.
+If `remoteScript()` is called after the DOM has loaded - the script loading
+gets executed immediately, if `appendScript:` option is not present scripts are
+appended to the end of the <body> tag.
 
 NOTE: that script referring to a remote URL run with the same authority as
 scripts from Your page and have access to Your cookies. Thus only load remote
