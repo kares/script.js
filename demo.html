@@ -6,14 +6,14 @@
         var gist = script.src.indexOf('gist.github.com') != -1; // or pastie
         var linksCount = gist ? 1 : 2; // pastie has clean.css besides embed.css
         if ( writeArray ) { // onLoad - writeArray contains all document.writes
-          var i = -1;
-          while ( writeArray[++i] && linksCount ) {
-              var str = writeArray[i].replace(/^\s*/, "");
-              str = str.substring(0, 5).toLowerCase();
-              if (str == '<link') {
-                  writeArray[i] = ''; linksCount--;
-              }
-          }
+            var i = -1;
+            while ( writeArray[++i] && linksCount ) {
+                var str = writeArray[i].replace(/^\s*/, "");
+                str = str.substring(0, 5).toLowerCase();
+                if (str == '<link') {
+                    writeArray[i] = ''; linksCount--;
+                }
+            }
         }
         else { // loaded in-place - links are already in the DOM
           var removeSiblingLink = function($elem) {
