@@ -3,7 +3,7 @@ Remote Script
 
 A helper for loading remote javascript using the "script tag hack".
 
-The \<script\> tags might fetch any (remote) javascript by specifying a `src:`
+The `<script>` tags might fetch any (remote) javascript by specifying a `src`
 attribute - they are not constrained by the same origin policy as AJAX requests.
 However as those load document building is blocked and the page feels slow.
 This script enables loading of such remote scripts after the document is built.
@@ -60,12 +60,12 @@ Examples
         }
     });
 
-    // @see the demo.html for a scriptLoaded callback that removes style links
+    // @see demo.html for a scriptLoaded callback that removes style links
     // from pasties (http://pastie.org) and gists (http://gist.github.com)
 
 If `remoteScript()` is called after the DOM has loaded - the script loading
 gets executed immediately, if `appendScript:` option is not present scripts are
-appended to the end of the \<body\> tag.
+appended to the end of the `<body>` tag.
 
 NOTE: that script referring to a remote URL run with the same authority as
 scripts from Your page and have access to Your cookies. Thus only load remote
