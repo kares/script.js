@@ -42,11 +42,11 @@
  *
  * @author Copyright (c) 2010 - Karol Bucek
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
- * @version 0.1
+ * @version 0.2
  */
 var remoteScript = ( function() {
     function log() { // a logging helper
-        var debug = false;
+        var debug = true;
         try {
             if ( debug && console ) console.log(arguments);
         } catch (e) { /* */ }
@@ -63,6 +63,23 @@ var remoteScript = ( function() {
             log('document.write() unexpected args = ', args);
         }
     }
+    var docWrite, docWriteln;
+    function overrideDocWrites() {
+        if ( ! docWrite ) {
+            docWrite = document.write;
+            docWriteln = document.writeln;
+        }
+        document.write = pushToWriteArray;
+        document.writeln = function(str) { pushToWriteArray(str + '\n'); };
+    }
+    function restoreDocWrites() {
+        if ( docWrite ) {
+            document.write = docWrite;
+            document.writeln = docWriteln;
+        }
+        docWrite = null; docWriteln =  null;
+    }
+
     // load the next "script" (element) and invoke callback when done :
     function loadScript(opts, doneCallback) {
         log('loadScript() opts = ', opts);
@@ -74,6 +91,7 @@ var remoteScript = ( function() {
 
             var handleScriptLoaded = function() {
                 if ( scriptLoaded ) scriptLoaded($script, writeArray || undefined);
+                var $div = document.getElementById(opts.id); // placeholder
                 if ( writeArray ) { // document.write happened
                     log('handleScriptLoaded() writeArray.len = ', writeArray.length);
                     var $scriptSibling = $script.nextSibling;
@@ -86,7 +104,6 @@ var remoteScript = ( function() {
                             $script.parentNode.appendChild($node);
                         }
                     };
-                    var $div = document.getElementById(opts.id); // placeholder
                     if ( ! $div ) { // if called after DOM load - it won't exist
                         $div = document.createElement('div');
                         appendNode( $div );
@@ -99,8 +116,8 @@ var remoteScript = ( function() {
                         //$div.parentNode.insertBefore($div.childNodes[0], $div);
                         appendNode( $div.childNodes[0] );
                     }
-                    $div.parentNode.removeChild($div); // was a temporary
                 }
+                if ( $div ) $div.parentNode.removeChild($div); // was a temporary
             };
 
             if ($script.readyState) { // IE
@@ -119,8 +136,7 @@ var remoteScript = ( function() {
                     if ( doneCallback ) doneCallback();
                 };
             }
-            // finally a <script> gets into DOM
-            opts.appendScript($script);
+            opts.appendScript($script); // finally a <script> gets into DOM
         }
         else {
             $script = document.getElementById(opts.id);
@@ -150,13 +166,11 @@ var remoteScript = ( function() {
         log('scriptList() scriptList.len = ', scriptList.length);
         var scriptListCopy = scriptList;scriptList = null;
 
-        var documentWrite = document.write;
         var loadAndYieldNext = function(opts) {
-            document.write = pushToWriteArray;
+            overrideDocWrites();
             loadScript(opts, function() {
-                document.write = documentWrite; // restore document.write
+                restoreDocWrites(); writeArray = null; // clear for next
                 scriptListCopy.yieldNext(loadAndYieldNext); // recurse to next
-                writeArray = null; // clear it for next iteration
             });
         };
         scriptListCopy.yieldNext(loadAndYieldNext);
@@ -166,7 +180,7 @@ var remoteScript = ( function() {
     if ( document.addEventListener ) { // non-IE
         loadFunc = function() {
             document.removeEventListener("DOMContentLoaded", loadFunc, false);
-            loadAllScripts();loadFunc = null;
+            loadAllScripts(); loadFunc = null;
         };
         document.addEventListener("DOMContentLoaded", loadFunc, false);
      }
@@ -174,7 +188,7 @@ var remoteScript = ( function() {
         loadFunc = function() {
             if (document.readyState === "complete") { // make sure body exists
                 document.detachEvent( "onreadystatechange", loadFunc );
-                loadAllScripts();loadFunc = null;
+                loadAllScripts(); loadFunc = null;
             }
         };
         document.attachEvent("onreadystatechange", loadFunc);
@@ -199,9 +213,10 @@ var remoteScript = ( function() {
             opts.src = base + '/' + opts.src;
         }
         if ( ! opts.id ) { // generate one :
-            var id = opts.src;
-            id = id.substring(id.lastIndexOf('/') + 1).replace('.', '_');
-            opts.id = id + '-' + (new Date()).getTime();
+            //var id = opts.src;
+            //id = id.substring(id.lastIndexOf('/') + 1).replace('.', '_');
+            //opts.id = id + '-' + (new Date()).getTime();
+            opts.id = '_remoteScript-' + (new Date()).getTime();
         }
         var appendElem = opts.appendScript;
         if ( typeof appendElem === "string" ) {
@@ -243,10 +258,9 @@ var remoteScript = ( function() {
                     $elem.appendChild(script);
                 }
             }
-            var documentWrite = document.write;
-            document.write = pushToWriteArray;
+            overrideDocWrites();
             loadScript(opts, function() {
-                document.write = documentWrite; // restore document.write
+                restoreDocWrites();
                 writeArray = null; // clear it for next iteration
             }); // immediately - onload already happened
         }
