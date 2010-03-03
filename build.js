@@ -55,10 +55,11 @@ function postData(url, data) {
 
     var reader = new BufferedReader( 
         new InputStreamReader( connection.getInputStream() ) );
-    var line, response = '';
+    var line, response = [];
     while ((line = reader.readLine()) != null) {
-        response += line;
+        response.push(line);
     }
+    response = response.join('\n');
 
     println('HTTP response: ' + connection.getResponseCode() + 
             ' ' + connection.getResponseMessage() +
