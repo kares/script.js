@@ -17,8 +17,12 @@
  * - src: the script source - absolute HTTP URL or relative to 'base',
  *   this is the only required property
  * - base: the URL base - allows relative paths with the 'src' property
- * - onLoad: set to true to load scripts after DOM is ready otherwise
- *   their going to load while building the DOM
+ * - onLoad: set to true to load scripts after DOM is ready otherwise their
+ *   going to load while building the DOM
+ * - order: the order of loading the scripts (makes sense only when onLoad is
+ *   true), e.g. adding a script with order 0 means that it will get to the
+ *   0-th position in the list of scripts to be loaded and thus will be loaded
+ *   first
  * - loadingHTML: HTML to show in place of the script while not loaded
  * - scriptLoaded: callback that gets invoked after the script has loaded the
  *   script element is passed as the first param if the loading happened during
@@ -42,11 +46,11 @@
  *
  * @author Copyright (c) 2010 - Karol Bucek
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
- * @version 0.2
+ * @version 0.3
  */
 var remoteScript = ( function() {
     function log() { // a logging helper
-        var debug = true;
+        var debug = false;
         try {
             if ( debug && console ) console.log(arguments);
         } catch (e) { /* */ }
@@ -164,7 +168,7 @@ var remoteScript = ( function() {
     function loadAllScripts() {
         if ( ! scriptList ) return; // already loaded or nothing to load
         log('scriptList() scriptList.len = ', scriptList.length);
-        var scriptListCopy = scriptList;scriptList = null;
+        var scriptListCopy = scriptList; scriptList = null;
 
         var loadAndYieldNext = function(opts) {
             overrideDocWrites();
@@ -248,7 +252,9 @@ var remoteScript = ( function() {
                 content = '<script id="'+ opts.id +'" src="'+ opts.src +'"><\/script>';
             }
             document.write(content); // ok as we're still building the DOM
-            scriptList.push( opts );
+            var order = opts.order;
+            if (order == null) scriptList.push( opts );
+            else scriptList.splice( order, 0, opts );
         }
         else {
             opts.onLoad = true; // doesn't make sense to be false
