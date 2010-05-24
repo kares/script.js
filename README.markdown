@@ -70,6 +70,3 @@ appended to the end of the `<body>` tag.
 NOTE: that script referring to a remote URL run with the same authority as
 scripts from Your page and have access to Your cookies. Thus only load remote
 scripts from servers that You trust !
-
-Copyright (c) 2010 Karol Bucek,
-released under the [Apache License](http://www.apache.org/licenses/LICENSE-2.0.html)
