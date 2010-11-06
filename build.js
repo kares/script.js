@@ -5,7 +5,7 @@
  * `rhino -f build.js`
  */
 if (typeof java === "undefined") {
-    throw "this script requires rhino (java) to run !";
+    throw "this script requires rhino/ringo (java) to run !";
 }
 importPackage(java.lang);
 
@@ -104,20 +104,23 @@ function validateResponse(response) {
     }
 }
 
-var SCRIPT_NAME = 'remoteScript';
+var SCRIPT_NAME = 'script';
 var SCRIPT_FILE = SCRIPT_NAME + '.js';
 var SCRIPT_MIN_FILE = SCRIPT_NAME + '.min.js';
 
 var COMPILER_URL = 'http://closure-compiler.appspot.com/compile';
-var COMPILE_OPTS = {};
-var jsContent = readFile(SCRIPT_FILE);
-COMPILE_OPTS['js_code'] = jsContent;
-COMPILE_OPTS['output_info'] = 'compiled_code';
-COMPILE_OPTS['output_format'] = 'text';
-COMPILE_OPTS['compilation_level'] = 'SIMPLE_OPTIMIZATIONS';
 
-var jsMinified = postData(COMPILER_URL, encodeContent(COMPILE_OPTS));
-validateResponse(jsMinified);
+var jsContent = readFile(SCRIPT_FILE);
+
+var COMPILER_DATA = {
+    js_code: jsContent,
+    output_info: 'compiled_code',
+    output_format: 'text',
+    compilation_level: 'SIMPLE_OPTIMIZATIONS'
+};
+
+var jsMinified = postData( COMPILER_URL, encodeContent(COMPILER_DATA) );
+validateResponse( jsMinified );
 var minFile = new File(SCRIPT_MIN_FILE);
 var minFileWriter = new FileWriter(minFile, false);
 minFileWriter.write(jsMinified, 0, jsMinified.length);
