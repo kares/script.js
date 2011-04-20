@@ -1,0 +1,1 @@
+document.write('<span class="writeSpan">span</span>');

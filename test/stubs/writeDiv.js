@@ -1,0 +1,1 @@
+document.write('<div class="writeDiv">div</div>');

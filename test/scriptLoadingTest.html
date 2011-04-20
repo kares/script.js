@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Script.JS Test Suite</title>
+  <link rel="stylesheet" type="text/css" href="lib/qunit.css"/>
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/qunit.js"></script>
+  <script type="text/javascript" src="../script.js"></script>
+</head>
+<body>
+
+<div id="test1">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js' });</script>
+</div>
+
+<script type="text/javascript">
+    test("test1", function() {
+        var $test1 = $('#test1');
+        equal( $test1.find('script').length, 2, "should contain 2 script tags" );
+        ok( $test1.find('span.writeSpan').length, "should contain a span.writeSpan tag" );
+    });
+</script>
+
+<div id="test2">
+    <div class="begin"></div>
+    <script type="text/javascript">script("stubs/writeDiv.js");</script>
+    <script type="text/javascript">document.write('<div class="middle"></div>');</script>
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js' })</script>
+    <script type="text/javascript">document.write('<div class="end"></div>');</script>
+</div>
+
+<script type="text/javascript">
+    test("test2", function() {
+        var $test2 = $('#test2');
+        equal( $test2.children().length, 11, "should contain 11 children" );
+        var actual = [];
+        $test2.children().each( function() { actual.push( this.tagName.toUpperCase() ); } );
+        var expect = [ 'DIV', 'SCRIPT', 'SCRIPT', 'DIV', 'SCRIPT', 'DIV', 'SCRIPT', 'SCRIPT', 'SPAN', 'SCRIPT', 'DIV' ];
+        same( actual, expect, "should contain correct tag order" );
+    });
+</script>
+
+<div id="test3">
+    <script type="text/javascript">script({ src: 'stubs/writeDiv.js', defer: true });</script>
+</div>
+
+<script type="text/javascript">
+    test("test3", function() {
+        var $test3 = $('#test3');
+        equal( $test3.find('script').length, 2, "should contain 2 script tags" );
+
+        stop();
+        
+        setTimeout(function() {
+            ok( $test3.find('div.writeDiv').length, "should contain a div.writeDiv tag" );
+            start();
+        }, 100);
+    });
+</script>
+
+<div id="test4"></div>
+<div class="test4">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js?1', append: 'test4' });</script>
+</div>
+
+<script type="text/javascript">
+    test("test4 (append ignored if loading not deferred)", function() {
+        var $test4 = $('#test4');
+        ok( ! $test4.find('span.writeSpan').length, "should not contain a span.writeSpan tag" );
+
+        equal( $('.test4 script').length, 2, "should contain 2 script tags" );
+        ok( $('.test4 span.writeSpan').length, "should contain a span.writeSpan tag" );
+        equal( $('#_script-4').length, 0, "should contain no marker id" );
+    });
+</script>
+
+<div id="test5"></div>
+<div class="test5">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js?2', append: 'test5', defer: true });</script>
+</div>
+
+<script type="text/javascript">
+    test("test5 (content append-ed when loaded deferred)", function() {
+        var $test5 = $('#test5');
+        equal( $test5.find('script').length, 1, "should contain 1 script tag" );
+
+        stop();
+
+        setTimeout(function() {
+            equal( $('.test5 script').length, 1, "should contain 1 script tag" );
+            ok( $test5.find('span.writeSpan').length, "should contain a span.writeSpan tag" );
+            equal( $('#_script-5').length, 0, "should contain no marker div" );
+            start();
+        }, 100);
+    });
+</script>
+
+<div id="test6"></div>
+<div class="test6">
+    <script type="text/javascript">
+        script({
+            src: 'stubs/writeSpan.js', defer: true,
+            append: function($script) { $('#test6')[0].appendChild($script); }
+        });
+    </script>
+</div>
+
+<script type="text/javascript">
+    test("test6 (content append-ed with a function)", function() {
+        var $test6 = $('#test6');
+        equal( $test6.find('script').length, 1, "should contain 1 script tag" );
+
+        stop();
+
+        setTimeout(function() {
+            equal( $('.test6 script').length, 1, "should contain 1 script tag" );
+            ok( $test6.find('span.writeSpan').length, "should contain a span.writeSpan tag" );
+            start();
+        }, 100);
+    });
+</script>
+
+<div id="test7">
+    <script type="text/javascript">script('stubs/writeScript.js');</script>
+</div>
+
+<script type="text/javascript">
+    test("test7 (document.write)", function() {
+        var $test7 = $('#test7');
+        equal( $test7.find('script').length, 3, "should contain 3 script tags" );
+
+        equal( 3, $test7.contents().get(-1).nodeType, "should contain a text node" );
+        var text = $test7.contents().get(-1).nodeValue;
+        equal( 'writeScript', text.replace(/\n/g, ''), "should contain writeScript text" );
+    });
+</script>
+
+<div id="test8">
+    <script type="text/javascript">script({ src: 'stubs/writeScript.js', defer: true });</script>
+</div>
+
+<script type="text/javascript">
+    test("test8 (document.write deferred can't work !)", function() {
+        var $test8 = $('#test8');
+        equal( $test8.find('script').length, 3, "should contain 3 script tags" );
+
+        stop();
+
+        setTimeout(function() {
+            if ( $test8.contents().get(-1).nodeType == 3 ) {
+                var text = $test8.contents().get(-1).nodeValue;
+                notEqual( 'writeScript', text.replace(/\n/g, ''), "should not contain writeScript text" );
+            }
+
+            var $script = $test8.find('script').get(-1);
+            equal( 'document.write("writeScript");', $script.text, "should contain un-evaluated script" );
+
+            start();
+        }, 100);
+    });
+</script>
+
+<div><br/></div>
+
+<h1 id="qunit-header">Test Results</h1>
+<h2 id="qunit-banner"></h2>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"><li></li></ol>
+
+</body>
+</html>
