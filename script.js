@@ -67,9 +67,7 @@ var script = ( function() {
         log = function() {
             var args = [ '[script.js] ' ].concat( arguments );
             if ( window.console ) {
-                console.firebug ? // IE8 can't console.log.apply !
-                    console.log.apply( console, args ) :
-                        console.log( args.join('') );
+                console.log.apply( console, args );
             }
             else if ( window.opera ) {
                 opera.postError( args.join('') );
@@ -78,6 +76,10 @@ var script = ( function() {
                 // NOOP
             }
         };
+        // IE8 can't console.log.apply :
+        if ( window.console && ! console.firebug ) {
+            log = console.log;
+        }
     }
 
     var writes = null;
@@ -120,7 +122,7 @@ var script = ( function() {
             if ( opts.charset ) $script.setAttribute('charset', opts.charset);
 
             var handleScriptLoaded = function() {
-                if (loadedCallback) {
+                if ( loadedCallback ) {
                     var loadedReturn = loadedCallback.call($script, writes || undefined);
                     if (loadedReturn === false) return;
                 }
@@ -157,23 +159,21 @@ var script = ( function() {
                 if ( $div ) $div.parentNode.removeChild($div); // was a temporary
                 if ( completeCallback ) completeCallback.call($script);
             };
-
-            if ($script.readyState) { // IE
-                $script.onreadystatechange = function() {
-                    if ($script.readyState === "loaded" ||
-                        $script.readyState === "complete") {
-                        $script.onreadystatechange = null; // do not trigger twice
-                        try { handleScriptLoaded(); }
-                        finally { endFunction && endFunction(); }
-                    }
-                };
-            }
-            else { // non-IE
-                $script.onload = function() {
+            
+            var done = false;
+            $script.onload = $script.onreadystatechange = function() {
+                if ( ! done && ( ! this.readyState || 
+                    this.readyState === "loaded" || this.readyState === "complete" ) ) {
+                    done = true;
+                    
+                    $script.onload = $script.onreadystatechange = null;
+                    
                     try { handleScriptLoaded(); }
-                    finally { endFunction && endFunction(); }
-                };
-            }
+                    finally { endFunction && endFunction(); } // TODO setTimeout(1) !?!
+                    // TODO remove $script ?
+                }
+            };
+            
             opts.append($script); // finally a <script> gets into DOM
         }
         else {
@@ -221,24 +221,46 @@ var script = ( function() {
         _scripts.yieldNext(loadAndYieldNext);
     }
     // initialization - after DOM is ready call loadAllScripts() :
-    var loadFunc;
-    if ( document.addEventListener ) {
-        loadFunc = function() {
-            document.removeEventListener("DOMContentLoaded", loadFunc, false);
-            loadAllScripts();loadFunc = null;
+    var DOMContentLoaded, load = function() { // a window.onload fallback
+        if ( DOMContentLoaded ) { DOMContentLoaded = null; loadAllScripts(); }
+    };
+    if ( document.addEventListener ) { // "normal" browsers
+        DOMContentLoaded = function() {
+            document.removeEventListener( "DOMContentLoaded", DOMContentLoaded, false );
+            DOMContentLoaded = null; loadAllScripts();
         };
-        document.addEventListener("DOMContentLoaded", loadFunc, false);
+        document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
+        window.addEventListener( "load", load, false );
      }
-     else if ( document.attachEvent ) { // IE
-        loadFunc = function() {
+     else if ( document.attachEvent ) { // IE crap follows
+        DOMContentLoaded = function() {
             if (document.readyState === "complete") { // make sure body exists
-                document.detachEvent( "onreadystatechange", loadFunc );
-                loadAllScripts();loadFunc = null;
+                document.detachEvent( "onreadystatechange", DOMContentLoaded );
+                DOMContentLoaded = null; loadAllScripts();
             }
         };
-        document.attachEvent("onreadystatechange", loadFunc);
+        document.attachEvent( "onreadystatechange", DOMContentLoaded );
+        window.attachEvent( "onload", load );
+        // If IE and not a frame
+        // continually check to see if the document is ready
+        // http://javascript.nwbox.com/IEContentLoaded/
+        var doScrollCheck = function doScrollCheck() {
+            if ( ! DOMContentLoaded ) return;
+            try { document.documentElement.doScroll("left"); }
+            catch(e) { setTimeout( doScrollCheck, 1 ); return; }
+            
+            loadAllScripts();
+        }
+        var toplevel = false;
+        try { toplevel = window.frameElement == null; } catch(e) {}
+        if ( document.documentElement.doScroll && toplevel ) {
+            doScrollCheck();
+        }
     }
-
+    
+    /**
+     * The script function itself
+     */
     var script = function(args) {
         if ( ! args ) throw 'script : no arguments given';
         if ( typeof args === "string" ) args = { src: args };
@@ -289,7 +311,7 @@ var script = ( function() {
         }
 
         // loadFunc is null after DOM load event already occured :
-        if ( loadFunc ) {
+        if ( DOMContentLoaded ) {
             var content = '';
             if ( opts.defer ) {
                 content = '<div id="'+ opts.id +'"';
