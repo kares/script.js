@@ -61,11 +61,10 @@
  * @version 0.6-SNAPSHOT
  */
 var script = ( function() {
-    var DEBUG = true;
-    var log = function() {}; // empty fn
-    if (DEBUG) {
+    var LOG = true, log = function() {}; // empty fn
+    if (LOG) {
         log = function() {
-            var args = [ '[script.js] ' ].concat( arguments );
+            var args = [].concat( arguments );
             if ( window.console ) {
                 console.log.apply( console, args );
             }
@@ -86,12 +85,12 @@ var script = ( function() {
     var tempDocWrite = function() { // a document.write replacement
         var args = arguments;
         if ( args && args[0] ) {
-            log('document.write() args[0] = ', args[0]);
+            LOG && log('document.write() args[0] = ', args[0]);
             if ( ! writes ) writes = [];
             writes.push( args[0] );
         }
         else {
-            log('document.write() unexpected args = ', args);
+            LOG && log('document.write() unexpected args = ', args);
         }
     };
     var tempDocWriteln = function(str) { tempDocWrite(str + '\n'); };
@@ -110,25 +109,25 @@ var script = ( function() {
     }
 
     // load the next "script" (element) and invoke callback when done :
-    function loadScript(opts, endFunction) {
-        log('loadScript() opts = ', opts);
-        var loadedCallback = opts.loaded, completeCallback = opts.complete;
+    function loadScript(settings, endCallback) {
+        LOG && log('loadScript() opts = ', settings);
+        var loadedCallback = settings.loaded, completeCallback = settings.complete;
         var $script;
 
-        if ( opts.defer ) {
+        if ( settings.defer ) {
             $script = document.createElement('script');
-            $script.src = opts.src;
-            if ( opts.type ) $script.type = opts.type;
-            if ( opts.charset ) $script.setAttribute('charset', opts.charset);
+            $script.src = settings.src;
+            if ( settings.type ) $script.type = settings.type;
+            if ( settings.charset ) $script.setAttribute('charset', settings.charset);
 
             var handleScriptLoaded = function() {
                 if ( loadedCallback ) {
                     var loadedReturn = loadedCallback.call($script, writes || undefined);
                     if (loadedReturn === false) return;
                 }
-                var $div = document.getElementById(opts.id); // placeholder
+                var $div = document.getElementById(settings.id); // placeholder
                 if ( writes ) { // document.write happened
-                    log('handleScriptLoaded() writeArray.len = ', writes.length);
+                    LOG && log('handleScriptLoaded() writeArray.len = ', writes.length);
                     //var $scriptSibling = $script.nextSibling;
                     // nodes should get after the <script> tag :
                     var appendNode = function($node) {
@@ -145,8 +144,10 @@ var script = ( function() {
                     }
                     // insert the HTML collected from document.write :
                     $div.style.display = 'none';
-                    $div.innerHTML = writes.join('');
-                    log('handleScriptLoaded() div.childNodes.length = ', $div.childNodes.length);
+                    // IE hack for injecting script/style tags correctly :
+                    $div.innerHTML = '<br/>' + writes.join('');
+                    $div.removeChild( $div.childNodes[0] ); // remove the <br/> hack
+                    LOG && log('handleScriptLoaded() div.childNodes.length = ', $div.childNodes.length);
                     // the HTML gets after the <script> tag :
                     var $divNode = $div.childNodes[0];
                     while ( $divNode ) {
@@ -169,15 +170,15 @@ var script = ( function() {
                     $script.onload = $script.onreadystatechange = null;
                     
                     try { handleScriptLoaded(); }
-                    finally { endFunction && endFunction(); } // TODO setTimeout(1) !?!
+                    finally { endCallback && endCallback(); } // TODO setTimeout(1) !?!
                     // TODO remove $script ?
                 }
             };
             
-            opts.append($script); // finally a <script> gets into DOM
+            settings.append($script); // finally a <script> gets into DOM
         }
         else {
-            $script = document.getElementById(opts.id);
+            $script = document.getElementById(settings.id);
             try {
                 if ( loadedCallback ) loadedCallback.call($script);
                 // here we do not care about the return value
@@ -185,7 +186,7 @@ var script = ( function() {
             }
             finally {
                 $script.id = null;
-                endFunction && endFunction();
+                endCallback && endCallback();
             }
         }
     }
@@ -194,21 +195,21 @@ var script = ( function() {
     var scripts = []; // a list of scripts to load
     scripts.yieldNext = function(yield) {
         if ( ! this.next ) this.next = 0;
-        log('yieldNext() next = ', this.next);
+        LOG && log('yieldNext() next = ', this.next);
         var nextElem = this[ this.next++ ]; // the args
         if ( nextElem ) {
             yield( nextElem );
             return true; // yielded
         }
         else {
-            log('yieldNext() no next - done !');
+            LOG && log('yieldNext() no next - done !');
             return false; // no yield
         }
     };
     // load all stored gist elements by iterating with loadScript()
     function loadAllScripts() {
         if ( ! scripts ) return; // already loaded or nothing to load
-        log('loadAllScripts() scripts.length = ', scripts.length);
+        LOG && log('loadAllScripts() scripts.length = ', scripts.length);
         var _scripts = scripts; scripts = null;
 
         var loadAndYieldNext = function(opts) {
