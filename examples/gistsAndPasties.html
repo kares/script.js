@@ -10,17 +10,15 @@
 <h1>Script.JS Gists & Pasties Example</h1>
 
 <script type="text/javascript">
-    var removeEmbedStyleLink = function(script, writeArray) {
-        var gist = script.src.indexOf('gist.github.com') != -1; // or pastie
+    var removeEmbedStyleLink = function(writes) {
+        var gist = this.src.indexOf('gist.github.com') != -1; // or pastie
         var linksCount = gist ? 1 : 2; // pastie has clean.css besides embed.css
-        if ( writeArray ) { // onLoad - writeArray contains all document.writes
+        if ( writes ) { // defered - writes contains all document.writes
             var i = -1;
-            while ( writeArray[++i] && linksCount ) {
-                var str = writeArray[i].replace(/^\s*/, "");
+            while ( writes[++i] && linksCount ) {
+                var str = writes[i].replace(/^\s*/, "");
                 str = str.substring(0, 5).toLowerCase();
-                if (str == '<link') {
-                    writeArray[i] = ''; linksCount--;
-                }
+                if (str == '<link') { writes[i] = ''; linksCount--; }
             }
         }
         else { // loaded in-place - links are already in the DOM
@@ -30,7 +28,7 @@
               }
               if ( $elem ) $elem.parentNode.removeChild($elem);
           }
-          var startNode = script.nextSibling;
+          var startNode = this.nextSibling;
           if ( ! gist ) {
               while (startNode.className != 'pastie') {
                   startNode = startNode.nextSibling;
@@ -40,43 +38,33 @@
               removeSiblingLink(gist ? startNode : startNode.firstChild);
           }
         }
+    };
+    
+    function randomPastie() {
+        var base = 'http://pastie.org/';
+        var pasties = '2 11 42'.split(' ');
+        return base + pasties[ Math.floor(Math.random() * pasties.length) ] + '.js';
     }
-
-    script.defaults.onLoad = true;
-    script.defaults.loaded = removeEmbedStyleLink;
-    script.defaults.base = 'http://gist.github.com';
+    
+    function randomGist() {
+        var base = 'http://gist.github.com/';
+        var gists = '895944 911210 919069 646529 310321'.split(' ');
+        return base + gists[ Math.floor(Math.random() * gists.length) ] + '.js';
+    }
 </script>
 
-<h3>1 BEG</h3>
-    <script type="text/javascript">script({ src: '264891.js', onLoad: false });</script>
-<h3>1 END</h3>
-
-<h3>2 + 3 BEG</h3>
-    <script type="text/javascript">
-      script({ src: 'http://pastie.org/848365.js', loadingHTML: '<h4>... LOADING PASTIE ...</h4>' });
-      document.write('<h4>delimiter</h4>');
-      script('313463.js');
-    </script>
-<h3>2 + 3 END</h3>
-
-<script type="text/javascript">
-    script({ src: 'http://gist.github.com/319433.js', append: 'putGistHere', order: 0 });
-</script>
-
-<h3>4 BEG</h3>
-    <div id="putGistHere"></div>
-<h3>4 END</h3>
-
-<script type="text/javascript">
-    script.defaults.base = null;
-    script.defaults.loaded = null;
-</script>
-
-<button  onclick="script('http://gist.github.com/218254.js');">
-    Add a GIST
+<button onclick="script( { src: randomGist(), loaded: removeEmbedStyleLink } );">
+    Add a GIST (remove style)
 </button>
-<button  onclick="script('http://pastie.org/849505.js');">
-    Add a PASTIE
+<button onclick="script( { src: randomPastie(), loaded: removeEmbedStyleLink } );">
+    Add a PASTIE (remove style)
+</button>
+
+<button onclick="script( randomGist() );">
+    Add a GIST (with style)
+</button>
+<button onclick="script( randomPastie() );">
+    Add a PASTIE (with style)
 </button>
 
 <br/><br/>

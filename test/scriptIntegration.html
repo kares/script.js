@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Script.JS Test Suite</title>
+  <link rel="stylesheet" type="text/css" href="lib/qunit.css"/>
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/qunit.js"></script>
+  <script type="text/javascript" src="../script.js"></script>
+</head>
+<body>
+
+<div id="gist1">
+</div>
+<div id="gist2">
+</div>
+<div id="gist3">
+</div>
+<div id="gist4">
+</div>
+<div id="gmap">
+</div>
+
+<script type="text/javascript">
+    script.defaults.defer = true;
+    script.defaults.base  = 'https://gist.github.com';
+    script.defaults.loaded = function removeGistStyleLink(writes) {
+        // removing embed.css
+        if ( writes ) { // defered load
+          for (var i=0; i<writes.length; i++) {
+              var tagStart = writes[i].substring(0, 5);
+              if (tagStart.toLowerCase() == '<link') {
+                  writes[i] = ''; break; // only 1 css
+              }
+          }
+        }
+        else { // loaded in-place
+          var linkNode = this.nextSibling;
+          while (linkNode && linkNode.nodeName.toLowerCase() != 'link') {
+              linkNode = linkNode.nextSibling;
+          }
+          if (linkNode) linkNode.parentNode.removeChild(linkNode);
+        }
+    };
+    
+    test("load gists", function() {
+        
+        script({ src: '956897.js', defer: true, append: 'gist1' });
+        script({ src: 'https://gist.github.com/825641.js', append: document.getElementById('gist2') });
+        script.defaults.append = 'gist3';
+        script( '733267.js' );
+        delete script.defaults.append;
+
+        stop();
+        setTimeout(function() {
+            
+            $.each({ gist1: '956897', gist2: '825641', gist3: '733267' }, 
+                function(key, val) {
+                    var elem = document.getElementById(key);
+                    equal( $(elem).find('link').length, 0, "gist style link removed" );
+                    equal( $(elem).find('#gist-' + val).length, 1, "gists was loaded" );
+                }
+            );
+            
+            start();
+            
+            script({ src: '319433.js', defer: false, loaded: null, append: 'gist4' });
+            
+            stop();
+            setTimeout(function() {
+                
+                equal( $('#gist4').find('link').length, 1, "gist style link present" );
+                equal( $('#gist4').find('#gist-319433').length, 1, "gists was loaded" );
+
+                start();
+            
+            }, 1500);
+        
+        }, 3000); // IE is really slow !
+    });
+    
+    test("load gmap", function() {
+        
+        ok( typeof(google) === 'undefined', "no google namespace" );
+        
+        script({
+            src: "http://maps.google.com/maps/api/js?v=3.2&sensor=false", 
+            append: 'gmap',
+            complete: function() {
+                
+                start();
+                
+                ok( typeof(google) !== 'undefined', "google namespace" );
+                ok( google.maps, "google.maps loaded" );
+                
+                // map is still initializing - waint long enough for it :
+                setTimeout(function() {
+                    
+                    ok( google.maps.Map, "google.maps.Map loaded" );
+                    
+                }, 3000); // IE is really slow !
+            }
+        });
+        
+        stop();
+    });
+</script>
+
+<div><br/></div>
+
+<h1 id="qunit-header">Test Results</h1>
+<h2 id="qunit-banner"></h2>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"><li></li></ol>
+
+</body>
+</html>

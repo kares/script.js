@@ -14,23 +14,20 @@
 <div id="twitter_div">
     <h2 style="display:none;" class="sidebar-title">twitter</h2>
     <ul id="twitter_update_list"></ul>
-    <a id="twitter-link" style="display:block;text-align:right;" href="#">follow me</a>
+    <a id="twitter_link" style="display:block;text-align:right;" href="#">follow me</a>
 </div>
 
 <script src="http://twitter.com/javascripts/blogger.js" type="text/javascript"></script>
-<!--
-<script src="http://twitter.com/statuses/user_timeline/kbucek.json?callback=twitterCallback2&amp;count=3" type="text/javascript"></script>
--->
 
 <script type="text/javascript">
 (function() {
     var user = 'kbucek';
     var callback = 'twitterCallback2'; // from blogger.js
-    var twitterTimelineURL = 'http://twitter.com/statuses/user_timeline/'+ user +'.json?callback='+ callback +'&count=10';
+    var twitterTimelineURL = 'http://twitter.com/statuses/user_timeline/'+ user +'.json?callback='+ callback +'&count=50';
 
-    script({ src: twitterTimelineURL, onLoad: true, loadingHTML: "<h2>... loading tweets ...</h2>" });
+    script({ src: twitterTimelineURL, defer: true, loadingHTML: "<h2>... loading "+ user +"'s tweets ...</h2>" });
 
-    document.getElementById('twitter-link').setAttribute( 'href', 'http://twitter.com/' + user );
+    document.getElementById('twitter_link').setAttribute( 'href', 'http://twitter.com/' + user );
 })();
 </script>
 
