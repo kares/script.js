@@ -61,7 +61,7 @@
  * @version 0.6-SNAPSHOT
  */
 var script = ( function() {
-    var LOG = true, log = function() {}; // empty fn
+    var LOG = false, log = function() {}; // empty fn
     if (LOG) {
         log = function() {
             var args = [].concat( arguments );
@@ -109,24 +109,25 @@ var script = ( function() {
     }
 
     // load the next "script" (element) and invoke callback when done :
-    function loadScript(settings, endCallback) {
+    function loadScript(settings, doneCallback) {
         LOG && log('loadScript() opts = ', settings);
         var loadedCallback = settings.loaded, completeCallback = settings.complete;
-        var $script;
 
         if ( settings.defer ) {
-            $script = document.createElement('script');
+            var $script = document.createElement('script');
             $script.src = settings.src;
             if ( settings.type ) $script.type = settings.type;
             if ( settings.charset ) $script.setAttribute('charset', settings.charset);
 
             var handleScriptLoaded = function() {
                 if ( loadedCallback ) {
-                    var loadedReturn = loadedCallback.call($script, writes || undefined);
+                    var loadedReturn = loadedCallback.call($script, 
+                        settings.writes ? writes || undefined : undefined
+                    );
                     if (loadedReturn === false) return;
                 }
                 var $div = document.getElementById(settings.id); // placeholder
-                if ( writes ) { // document.write happened
+                if ( settings.writes && writes ) { // document.write happened
                     LOG && log('handleScriptLoaded() writeArray.len = ', writes.length);
                     //var $scriptSibling = $script.nextSibling;
                     // nodes should get after the <script> tag :
@@ -170,7 +171,7 @@ var script = ( function() {
                     $script.onload = $script.onreadystatechange = null;
                     
                     try { handleScriptLoaded(); }
-                    finally { endCallback && endCallback(); } // TODO setTimeout(1) !?!
+                    finally { doneCallback && doneCallback(); }
                     // TODO remove $script ?
                 }
             };
@@ -180,55 +181,60 @@ var script = ( function() {
         else {
             $script = document.getElementById(settings.id);
             try {
-                if ( loadedCallback ) loadedCallback.call($script);
-                // here we do not care about the return value
-                if ( completeCallback ) completeCallback.call($script);
+                var loadedReturn;
+                if ( loadedCallback ) {
+                    loadedReturn = loadedCallback.call($script);
+                }
+                if ( loadedReturn !== false && completeCallback ) { 
+                    completeCallback.call($script);
+                }
             }
             finally {
-                $script.id = null;
-                endCallback && endCallback();
+                if ( settings.idGenerated ) $script.id = null;
+                doneCallback && doneCallback();
             }
         }
     }
-    // a custom list used to store args for which embedGist() has
-    // been called (for later processing - when the DOM is ready)
+    
     var scripts = []; // a list of scripts to load
-    scripts.yieldNext = function(yield) {
-        if ( ! this.next ) this.next = 0;
-        LOG && log('yieldNext() next = ', this.next);
-        var nextElem = this[ this.next++ ]; // the args
-        if ( nextElem ) {
-            yield( nextElem );
-            return true; // yielded
-        }
-        else {
-            LOG && log('yieldNext() no next - done !');
-            return false; // no yield
-        }
-    };
-    // load all stored gist elements by iterating with loadScript()
-    function loadAllScripts() {
-        if ( ! scripts ) return; // already loaded or nothing to load
-        LOG && log('loadAllScripts() scripts.length = ', scripts.length);
-        var _scripts = scripts; scripts = null;
-
-        var loadAndYieldNext = function(opts) {
-            overrideDocWrites();
-            loadScript(opts, function() {
-                restoreDocWrites(); writes = null; // clear for next
-                _scripts.yieldNext(loadAndYieldNext); // recurse to next
-            });
-        };
-        _scripts.yieldNext(loadAndYieldNext);
+    function loadScripts() {
+        if ( ! scripts || scripts.loading ) return; // already loading
+        LOG && log('loadScripts() scripts.length = ', scripts.length);
+        scripts.loading = true;
+        (function loadNext() {
+            if ( ! scripts.length ) {
+                delete scripts.loading;
+                return;
+            }
+            var settings = scripts.shift();
+            if (settings) {
+                if (settings.writes) {
+                    LOG && log('loadNext() with writes ...');
+                    overrideDocWrites(); writes = null;
+                    loadScript(settings, function() { // done callback
+                        restoreDocWrites(); writes = null; // clear for next
+                        loadNext(); // setTimeout(loadNext, 1);
+                    });
+                }
+                else {
+                    LOG && log('loadNext() no writes ...');
+                    loadScript(settings);
+                    loadNext(); // setTimeout(loadNext, 1);
+                }
+            }
+            else { // maybe there's a hole in the list
+                loadNext();
+            }
+        })();
     }
-    // initialization - after DOM is ready call loadAllScripts() :
+    
     var DOMContentLoaded, load = function() { // a window.onload fallback
-        if ( DOMContentLoaded ) { DOMContentLoaded = null; loadAllScripts(); }
+        if ( DOMContentLoaded ) { DOMContentLoaded = null; loadScripts(); }
     };
     if ( document.addEventListener ) { // "normal" browsers
         DOMContentLoaded = function() {
             document.removeEventListener( "DOMContentLoaded", DOMContentLoaded, false );
-            DOMContentLoaded = null; loadAllScripts();
+            DOMContentLoaded = null; loadScripts();
         };
         document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
         window.addEventListener( "load", load, false );
@@ -237,7 +243,7 @@ var script = ( function() {
         DOMContentLoaded = function() {
             if (document.readyState === "complete") { // make sure body exists
                 document.detachEvent( "onreadystatechange", DOMContentLoaded );
-                DOMContentLoaded = null; loadAllScripts();
+                DOMContentLoaded = null; loadScripts();
             }
         };
         document.attachEvent( "onreadystatechange", DOMContentLoaded );
@@ -250,7 +256,7 @@ var script = ( function() {
             try { document.documentElement.doScroll("left"); }
             catch(e) { setTimeout( doScrollCheck, 1 ); return; }
             
-            loadAllScripts();
+            loadScripts();
         }
         var toplevel = false;
         try { toplevel = window.frameElement == null; } catch(e) {}
@@ -280,7 +286,6 @@ var script = ( function() {
         }
 
         // @todo support charset option !
-
         // onload option is @deprecated
         if ( opts.onload != null ) { // normalize onload -> onLoad
             if ( opts.onLoad != null ) {
@@ -296,7 +301,10 @@ var script = ( function() {
         }
         if ( typeof(opts.defer) === 'undefined' ) opts.defer = opts.onLoad;
 
-        if ( ! opts.id ) opts.id = script._generateId();
+        if ( ! opts.id ) { 
+            opts.id = script._generateId();
+            opts.idGenerated = true;
+        }
 
         var append = opts.append;
         if ( typeof append === "string" ) { // treat as Node ID
@@ -310,12 +318,13 @@ var script = ( function() {
                 append.appendChild($script);
             }
         }
-
-        // loadFunc is null after DOM load event already occured :
-        if ( DOMContentLoaded ) {
-            var content = '';
+        
+        // by default assume script does (document) writes :
+        if ( opts.writes == null ) opts.writes = true;
+        
+        if ( DOMContentLoaded ) { // null after DOM load event already occured
             if ( opts.defer ) {
-                content = '<div id="'+ opts.id +'"';
+                var content = '<div id="'+ opts.id +'"';
                 if ( opts.loadingHTML ) content += ('>' + opts.loadingHTML);
                 else content += ' style="diplay: none;">';
                 content += '</div>'; // no <script> yet - only a <div>
@@ -330,9 +339,8 @@ var script = ( function() {
                 content = '<script id="'+ opts.id +'" src="'+ opts.src +'"><\/script>';
             }
             document.write(content); // ok as we're still building the DOM
-            var order = opts.order;
-            if (order == null) scripts.push( opts );
-            else scripts.splice( order, 0, opts );
+            
+            opts.order == null ? scripts.push( opts ) : scripts.splice( opts.order, 0, opts );
         }
         else { // DOM load already happened
             opts.defer = true; // doesn't make sense to be false
@@ -342,22 +350,18 @@ var script = ( function() {
                     $elem.appendChild(script);
                 }
             }
-            overrideDocWrites();
-            loadScript(opts, function() {
-                restoreDocWrites();
-                writes = null; // clear it for next iteration
-            }); // immediately - document load already happened
+            
+            opts.order == null ? scripts.push( opts ) : scripts.splice( opts.order, 0, opts );
+            loadScripts(); // safely callable multiple times
         }
-        //if ( scripts ) scripts.push( opts );
-        //else loadScript(opts);
     }
 
-    var uid = 0;
+    var _generateId = 0;
     script._generateId = function() { // default _generateId fn
-        return '_script-' + ( uid++ );
+        return '_script-' + ( _generateId++ );
     };
 
-    script.defaults = { // default options
+    script.defaults = { // default script settings
         type: 'text/javascript'
     };
 

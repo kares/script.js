@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Script.JS Test Suite</title>
+  <link rel="stylesheet" type="text/css" href="lib/qunit.css"/>
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/qunit.js"></script>
+  <script type="text/javascript" src="../script.js"></script>
+</head>
+<body>
+
+<div id="order1">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', defer: true, order: 1 });</script>
+</div>
+<div id="order3">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', order: 3 });</script>
+</div>
+<div id="order4">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', defer: true });</script>
+</div>
+<div id="order0">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', defer: true, order: 0 });</script>
+</div>
+<div id="order7">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', order: 6 });</script>
+</div>
+<div id="order8">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', defer: true });</script>
+</div>
+<div id="order6">
+    <script type="text/javascript">script({ src: 'stubs/writeSpan.js', defer: true, order: 6 });</script>
+</div>
+
+<script type="text/javascript">
+    test("all scripts loaded", function() {
+        var immediate = [ 'order3', 'order7' ];
+        var defered = [ 'order1', 'order4', 'order0', 'order8', 'order6' ];
+        
+        $.each(immediate, function() {
+            var $elem = document.getElementById(this);
+            ok( $elem, this + ' exists ' );
+            ok( $( $elem ).find('.writeSpan').length, this + ' children exists ' );
+        });
+
+        stop();
+        
+        setTimeout(function() {
+            
+            $.each(defered, function(elem) {
+                var $elem = document.getElementById(this);
+                ok( $elem, this + ' exists ' );
+                ok( $( $elem ).find('.writeSpan').length, this + ' children exists ' );
+            });
+            
+            start();
+            
+        }, 100);
+    });
+</script>
+
+<div><br/></div>
+
+<h1 id="qunit-header">Test Results</h1>
+<h2 id="qunit-banner"></h2>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"><li></li></ol>
+
+</body>
+</html>

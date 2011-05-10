@@ -253,6 +253,74 @@
     });
 </script>
 
+<div id="test13">
+</div>
+
+<script type="text/javascript">
+    test("test13 (document.write with append string)", function() {
+        
+        script({ src: 'stubs/writeSpan.js', defer: true, append: 'test13' });
+        
+        var $test = $('#test13');
+        equal( $test.find('script').length, 1, "should contain 1 script tags" );
+
+        stop();
+
+        setTimeout(function() {
+            ok( $test.find('span.writeSpan').length, "should contain a span.writeSpan tag" );
+
+            start();
+        }, 100);
+    });
+</script>
+
+<div id="test14">
+</div>
+
+<script type="text/javascript">
+    test("test14 (document.write with append function)", function() {
+        
+        script({ src: 'stubs/writeSpan.js', 
+            append: function(script) {
+                document.getElementById('test14').appendChild(script);
+            }
+        });
+
+        stop();
+
+        setTimeout(function() {
+            var $test = $('#test14');
+            equal( $test.find('script').length, 1, "should contain 1 script tags" );
+            
+            ok( $test.find('span.writeSpan').length, "should contain a span.writeSpan tag" );
+
+            start();
+        }, 100);
+    });
+</script>
+
+<div id="test15">
+</div>
+
+<script type="text/javascript">
+    test("test15 (document.write a gist html)", function() {
+        
+        script({ src: 'stubs/writeGist.js', append: 'test15' });
+        
+        var $test = $('#test15');
+        equal( $test.find('script').length, 1, "should contain a script tags" );
+
+        stop();
+
+        setTimeout(function() {
+            equal( $test.find('link').length, 1, "gist style link present" );
+            equal( $test.find('#gist-319433').length, 1, "gists was loaded" );
+
+            start();
+        }, 100);
+    });
+</script>
+
 <div><br/></div>
 
 <h1 id="qunit-header">Test Results</h1>
