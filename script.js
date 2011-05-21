@@ -65,10 +65,12 @@
  *
  * @author Copyright (c) 2010 - Karol Bucek
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
- * @version 0.6
+ * @version 0.7-SNAPSHOT
  */
 var script = ( function() {
-    var LOG = false, log = function() {}; // empty fn
+    /** @const */
+    var LOG = false;
+    var log = function() {}; // empty fn
     if (LOG) {
         log = function() {
             var args = [].concat( arguments );
@@ -179,7 +181,6 @@ var script = ( function() {
                     
                     try { handleScriptLoaded(); }
                     finally { doneCallback && doneCallback(); }
-                    // TODO remove $script ?
                 }
             };
             
@@ -187,7 +188,9 @@ var script = ( function() {
         }
         else {
             $script = document.getElementById(settings.id);
-            try {
+            try { 
+                // @todo just a fallback we should hook up these scripts differently !
+                // when refactored @todo add a remove option - script from page ...
                 var loadedReturn;
                 if ( loadedCallback ) {
                     loadedReturn = loadedCallback.call($script);

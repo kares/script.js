@@ -116,7 +116,7 @@ var COMPILER_DATA = {
     js_code: jsContent,
     output_info: 'compiled_code',
     output_format: 'text',
-    compilation_level: 'SIMPLE_OPTIMIZATIONS'
+    compilation_level: 'SIMPLE_OPTIMIZATIONS' // 'ADVANCED_OPTIMIZATIONS'
 };
 
 var jsMinified = postData( COMPILER_URL, encodeContent(COMPILER_DATA) );
