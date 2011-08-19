@@ -111,15 +111,14 @@ var SCRIPT_MIN_FILE = SCRIPT_NAME + '.min.js';
 var COMPILER_URL = 'http://closure-compiler.appspot.com/compile';
 
 var jsContent = readFile(SCRIPT_FILE);
-
-var COMPILER_DATA = {
+var compilerOptions = {
     js_code: jsContent,
     output_info: 'compiled_code',
     output_format: 'text',
     compilation_level: 'SIMPLE_OPTIMIZATIONS' // 'ADVANCED_OPTIMIZATIONS'
 };
 
-var jsMinified = postData( COMPILER_URL, encodeContent(COMPILER_DATA) );
+var jsMinified = postData( COMPILER_URL, encodeContent(compilerOptions) );
 validateResponse( jsMinified );
 var minFile = new File(SCRIPT_MIN_FILE);
 var minFileWriter = new FileWriter(minFile, false);

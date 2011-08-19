@@ -65,11 +65,11 @@
  *
  * @author Copyright (c) 2010 - Karol Bucek
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
- * @version 0.7-SNAPSHOT
+ * @version 0.7
  */
 var script = ( function() {
     /** @const */
-    var LOG = true;
+    var LOG = false;
     
     var NOOP = function() {}; // empty fn
     var log = NOOP; // empty fn
