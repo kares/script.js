@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Script.JS Test Suite</title>
+  <link rel="stylesheet" type="text/css" href="lib/qunit.css"/>
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/qunit.js"></script>
+  <script type="text/javascript" src="../script.js"></script>
+</head>
+<body>
+
+<div id="testNonExisting1">
+    <script type="text/javascript">
+        script({ src: 'nonExisting.js', defer: true, writes: false, timeout: 3000 });
+    </script>
+</div>
+
+<script type="text/javascript">
+    test("testNonExisting1", function() {
+        var $test = $('#testNonExisting1');
+        equal( $test.find('script').length, 2, "should contain 2 script tags" );
+        var script = $test.find('script')[1];
+        equal( script.text, "", 'should be an empty script tag');
+    });
+</script>
+    
+<div id="testNonExisting2">
+    <script type="text/javascript">
+        script({ src: "nonExisting.js", defer: true, timeout: 1500, 
+            error: function() { $(this).parent().append('<div class="error"></div>'); } 
+        });
+    </script>
+</div>
+
+<script type="text/javascript">
+    test("testNonExisting2", function() {
+        var $test = $('#testNonExisting2');
+        equal( $test.find('.error').length, 0, "should contain no .error" );
+        
+        stop();
+        
+        setTimeout(function() {
+            equal( $test.find('.error').length, 1, "should contain .error" );
+            equal( $test.find('script').length, 1, "should contain 1 script tags" );
+            start();
+        }, 1500);
+    });
+</script>
+
+<!--
+<div id="test3">
+    <script type="text/javascript">
+        script({ src: "stubs/loop.js", defer: true, timeout: 2000, 
+            error: function() { $('#test2').append('<div class="error"></div>'); } 
+        });
+    </script>
+</div>-->
+    
+<div><br/></div>
+
+<h1 id="qunit-header">Test Results</h1>
+<h2 id="qunit-banner"></h2>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"><li></li></ol>
+
+</body>
+</html>
